@@ -1,0 +1,16 @@
+{
+  "name": "toji-app-deploy",
+  "version": "1.0.0",
+  "description": "Toji's Training Regimen (Bodyweight)",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node ./tools/dev-server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^24.23.0"
+  }
+}
