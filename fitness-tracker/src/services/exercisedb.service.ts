@@ -43,6 +43,18 @@ const RAPIDAPI_KEY = import.meta.env.VITE_RAPIDAPI_KEY || '';
 const RAPIDAPI_HOST = 'edb-with-videos-and-images-by-ascendapi.p.rapidapi.com';
 const BASE_URL = `https://${RAPIDAPI_HOST}/api/v1`;
 const CACHE_TTL = 55 * 60 * 1000; // 55 minutes (under the 1-hour limit)
+const API_TIMEOUT = 15000; // 15 seconds timeout for API calls
+
+// ── Timeout wrapper ────────────────────────────────────────────────────────
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => 
+      setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+    ),
+  ]);
+}
 
 // ── Mappings: API UPPERCASE → App title case ───────────────────────────────
 
@@ -296,39 +308,74 @@ export function apiToExercise(apiEx: ApiExercise): Exercise {
 export async function fetchAllExercises(): Promise<Exercise[]> {
   const cacheKey = 'all-exercises';
   const cached = getCached<Exercise[]>(cacheKey);
-  if (cached) return cached;
+  if (cached) {
+    console.log(`[ExerciseDB] Loaded ${cached.length} exercises from cache`);
+    return cached;
+  }
 
+  if (!RAPIDAPI_KEY) {
+    console.warn('[ExerciseDB] No API key configured, using fallback');
+    throw new Error('ExerciseDB API key not configured');
+  }
+
+  console.log('[ExerciseDB] Fetching exercises from API...');
   const allApiExercises: ApiExercise[] = [];
   let offset = 0;
   const limit = 100;
 
-  // Paginate through all exercises
-  while (true) {
-    const url = new URL(`${BASE_URL}/exercises`);
-    url.searchParams.set('limit', String(limit));
-    url.searchParams.set('offset', String(offset));
+  try {
+    // Paginate through all exercises with timeout
+    while (true) {
+      const url = new URL(`${BASE_URL}/exercises`);
+      url.searchParams.set('limit', String(limit));
+      url.searchParams.set('offset', String(offset));
 
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'X-RapidAPI-Key': RAPIDAPI_KEY,
-        'X-RapidAPI-Host': RAPIDAPI_HOST,
-      },
-    });
+      const fetchPromise = fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'X-RapidAPI-Key': RAPIDAPI_KEY,
+          'X-RapidAPI-Host': RAPIDAPI_HOST,
+        },
+      });
 
-    if (!response.ok) throw new Error(`ExerciseDB API error: ${response.status}`);
-    const json: ApiResponse<ApiExercise[]> = await response.json();
-    if (!json.success) break;
+      const response = await withTimeout(
+        fetchPromise,
+        API_TIMEOUT,
+        'ExerciseDB API request timed out'
+      );
 
-    allApiExercises.push(...json.data);
+      if (!response.ok) {
+        throw new Error(`ExerciseDB API error: ${response.status} ${response.statusText}`);
+      }
 
-    if (!json.meta?.hasNextPage) break;
-    offset += limit;
+      const json: ApiResponse<ApiExercise[]> = await response.json();
+      if (!json.success) {
+        console.warn('[ExerciseDB] API returned unsuccessful response');
+        break;
+      }
+
+      allApiExercises.push(...json.data);
+      console.log(`[ExerciseDB] Fetched ${json.data.length} exercises (total: ${allApiExercises.length})`);
+
+      if (!json.meta?.hasNextPage) break;
+      offset += limit;
+
+      // Safety limit to prevent infinite loop
+      if (offset > 1000) {
+        console.warn('[ExerciseDB] Reached fetch limit, stopping pagination');
+        break;
+      }
+    }
+
+    const exercises = allApiExercises.map(apiToExercise);
+    console.log(`[ExerciseDB] Successfully loaded ${exercises.length} exercises from API`);
+    setCache(cacheKey, exercises);
+    return exercises;
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    console.error('[ExerciseDB] Failed to fetch exercises:', errorMsg);
+    throw new Error(`Failed to load exercises from API: ${errorMsg}`);
   }
-
-  const exercises = allApiExercises.map(apiToExercise);
-  setCache(cacheKey, exercises);
-  return exercises;
 }
 
 /**

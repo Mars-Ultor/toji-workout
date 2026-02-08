@@ -269,6 +269,7 @@ function getExerciseCount(
 
 async function getExercisePool(): Promise<Exercise[]> {
   if (!isExerciseDbConfigured()) {
+    console.log('[ProgramGenerator] Using fallback exercises (API not configured)');
     return FALLBACK_EXERCISE_DB;
   }
 
@@ -278,15 +279,18 @@ async function getExercisePool(): Promise<Exercise[]> {
 
     // If API returns decent results, use them. Otherwise fallback.
     if (apiExercises.length >= 20) {
+      console.log(`[ProgramGenerator] Using ${apiExercises.length} exercises from API`);
       // Merge: API exercises + fallback to ensure good coverage of common exercises
       const apiIds = new Set(apiExercises.map(e => e.id));
       const extraFallback = FALLBACK_EXERCISE_DB.filter(e => !apiIds.has(e.id));
       return [...apiExercises, ...extraFallback];
     }
 
+    console.warn(`[ProgramGenerator] API returned only ${apiExercises.length} exercises, using fallback`);
     return FALLBACK_EXERCISE_DB;
   } catch (err) {
-    console.warn('ExerciseDB API unavailable, using fallback exercises:', err);
+    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    console.warn('[ProgramGenerator] ExerciseDB API failed, using fallback exercises:', errorMsg);
     return FALLBACK_EXERCISE_DB;
   }
 }
@@ -294,16 +298,26 @@ async function getExercisePool(): Promise<Exercise[]> {
 // ── Main generation function ───────────────────────────────────────────────
 
 export async function generateProgram(answers: ProgramWizardAnswers): Promise<GeneratedProgram> {
+  console.log('[ProgramGenerator] Starting program generation...', answers);
+  
   const split = determineSplit(answers);
   const splitDays = getSplitDays(split, answers.daysPerWeek);
   const exerciseCount = getExerciseCount(answers.sessionLength, split);
 
   // Fetch exercise pool from API (or fallback)
   const fullPool = await getExercisePool();
+  console.log(`[ProgramGenerator] Loaded ${fullPool.length} total exercises`);
 
   // Build available exercise pool
   let pool = filterByEquipment(fullPool, answers.equipment);
+  console.log(`[ProgramGenerator] After equipment filter: ${pool.length} exercises`);
+  
   pool = filterByDifficulty(pool, answers.experience);
+  console.log(`[ProgramGenerator] After difficulty filter: ${pool.length} exercises`);
+
+  if (pool.length === 0) {
+    throw new Error('No exercises available for the selected equipment and experience level. Try selecting more equipment options.');
+  }
 
   const splitLabels: Record<string, string> = {
     'full-body': 'Full Body',
@@ -379,6 +393,7 @@ export async function generateProgram(answers: ProgramWizardAnswers): Promise<Ge
     };
   });
 
+  console.log(`[ProgramGenerator] Program generated successfully: ${programName} with ${days.length} days`);
   return { name: programName, description, days };
 }
 

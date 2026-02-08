@@ -37,6 +37,7 @@ export function ProgramWizard({ onComplete, onCancel }: ProgramWizardProps) {
   });
   const [preview, setPreview] = useState<GeneratedProgram | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const currentIndex = STEPS.indexOf(step);
   const progress = ((currentIndex + 1) / STEPS.length) * 100;
@@ -45,12 +46,16 @@ export function ProgramWizard({ onComplete, onCancel }: ProgramWizardProps) {
     const next = STEPS[currentIndex + 1];
     if (next === 'review') {
       setGenerating(true);
+      setError(null);
       setStep(next);
       try {
         const program = await generateProgram(answers);
         setPreview(program);
+        setError(null);
       } catch (err) {
         console.error('Failed to generate program:', err);
+        setError(`Failed to generate program: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        setPreview(null);
       } finally {
         setGenerating(false);
       }
@@ -65,11 +70,15 @@ export function ProgramWizard({ onComplete, onCancel }: ProgramWizardProps) {
 
   const regenerate = async () => {
     setGenerating(true);
+    setError(null);
     try {
       const program = await generateProgram(answers);
       setPreview(program);
+      setError(null);
     } catch (err) {
       console.error('Failed to regenerate program:', err);
+      setError(`Failed to generate program: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setPreview(null);
     } finally {
       setGenerating(false);
     }
@@ -137,6 +146,15 @@ export function ProgramWizard({ onComplete, onCancel }: ProgramWizardProps) {
         <div className="flex flex-col items-center justify-center py-12 gap-3">
           <Loader2 size={24} className="animate-spin text-red-400" />
           <p className="text-sm text-gray-400">Building your program...</p>
+          <p className="text-xs text-gray-600">Fetching exercises from database...</p>
+        </div>
+      )}
+      {step === 'review' && error && (
+        <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4">
+          <p className="text-sm text-red-400 mb-3">{error}</p>
+          <Button onClick={regenerate} variant="secondary" disabled={generating} className="w-full">
+            {generating ? <><Loader2 size={16} className="animate-spin" /> Retrying...</> : <>Try Again</>}
+          </Button>
         </div>
       )}
 
