@@ -1,14 +1,19 @@
 {
   "hosting": {
-    "public": "public",
+    "public": "fitness-tracker/dist",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
     "rewrites": [
-      { "source": "/oauth/callback", "destination": "/oauth/callback.html" },
       { "source": "**", "destination": "/index.html" }
     ]
+  },
+  "firestore": {
+    "rules": "fitness-tracker/firestore.rules"
+  },
+  "storage": {
+    "rules": "fitness-tracker/storage.rules"
   }
 }

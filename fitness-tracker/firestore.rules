@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // User profiles - users can only read/write their own
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Body metrics subcollection
+      match /bodyMetrics/{metricId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Nutrition targets - top-level collection with userId as document ID
+    match /nutritionTargets/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Food logs - top-level collection with userId/date structure
+    match /foodLogs/{userId}/{date}/{logId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Workout logs - top-level collection with userId/sessions structure
+    match /workoutLogs/{userId}/sessions/{sessionId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Custom foods - top-level collection with userId/foods structure
+    match /customFoods/{userId}/foods/{foodId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Custom recipes - top-level collection with userId/recipes structure
+    match /customRecipes/{userId}/recipes/{recipeId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Workout programs - top-level collection with userId/list structure
+    match /programs/{userId}/list/{programId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Exercises (shared, read-only for authenticated users)
+    match /exercises/{exerciseId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only via admin SDK
+    }
+
+    // Public food database (shared, read-only for authenticated users)
+    match /foods/{foodId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only via admin SDK
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
