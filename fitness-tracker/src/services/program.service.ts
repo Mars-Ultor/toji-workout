@@ -37,13 +37,29 @@ export interface SavedProgram {
   isActive?: boolean;
 }
 
+// Helper function to remove undefined values (Firestore doesn't accept undefined)
+function cleanUndefined<T>(obj: T): T {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(cleanUndefined) as T;
+  }
+  const cleaned: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      cleaned[key] = cleanUndefined(value);
+    }
+  }
+  return cleaned as T;
+}
+
 export async function saveProgram(userId: string, program: SavedProgram): Promise<void> {
   const docRef = doc(db, `programs/${userId}/list`, program.id);
-  // Convert Date to Firestore Timestamp
-  const programData = {
+  // Convert Date to Firestore Timestamp and remove undefined values
+  const programData = cleanUndefined({
     ...program,
     createdAt: Timestamp.fromDate(program.createdAt),
-  };
+  });
   await setDoc(docRef, programData);
 }
 
@@ -75,11 +91,11 @@ export async function setActiveProgram(
 ): Promise<void> {
   // Deactivate all, then activate the selected one
   const batch: Promise<void>[] = allPrograms.map((p) => {
-    const programData = {
+    const programData = cleanUndefined({
       ...p,
       createdAt: Timestamp.fromDate(p.createdAt),
       isActive: p.id === programId,
-    };
+    });
     return setDoc(doc(db, `programs/${userId}/list`, p.id), programData, { merge: true });
   });
   await Promise.all(batch);
