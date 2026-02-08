@@ -7,6 +7,7 @@ import {
   deleteDoc,
   query,
   orderBy,
+  Timestamp,
 } from 'firebase/firestore';
 
 export interface SavedProgramExercise {
@@ -38,7 +39,12 @@ export interface SavedProgram {
 
 export async function saveProgram(userId: string, program: SavedProgram): Promise<void> {
   const docRef = doc(db, `programs/${userId}/list`, program.id);
-  await setDoc(docRef, program);
+  // Convert Date to Firestore Timestamp
+  const programData = {
+    ...program,
+    createdAt: Timestamp.fromDate(program.createdAt),
+  };
+  await setDoc(docRef, programData);
 }
 
 export async function getPrograms(userId: string): Promise<SavedProgram[]> {
@@ -47,10 +53,15 @@ export async function getPrograms(userId: string): Promise<SavedProgram[]> {
     orderBy('createdAt', 'desc')
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => ({
-    id: d.id,
-    ...d.data(),
-  })) as SavedProgram[];
+  return snapshot.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      ...data,
+      // Convert Firestore Timestamp to Date
+      createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
+    };
+  }) as SavedProgram[];
 }
 
 export async function deleteProgram(userId: string, programId: string): Promise<void> {
@@ -63,8 +74,13 @@ export async function setActiveProgram(
   allPrograms: SavedProgram[]
 ): Promise<void> {
   // Deactivate all, then activate the selected one
-  const batch: Promise<void>[] = allPrograms.map((p) =>
-    setDoc(doc(db, `programs/${userId}/list`, p.id), { ...p, isActive: p.id === programId }, { merge: true })
-  );
+  const batch: Promise<void>[] = allPrograms.map((p) => {
+    const programData = {
+      ...p,
+      createdAt: Timestamp.fromDate(p.createdAt),
+      isActive: p.id === programId,
+    };
+    return setDoc(doc(db, `programs/${userId}/list`, p.id), programData, { merge: true });
+  });
   await Promise.all(batch);
 }
