@@ -57,6 +57,7 @@ function AuthListener() {
             profile = {
               uid: user.uid,
               email: user.email || '',
+              name: user.displayName || user.email?.split('@')[0] || 'User',
               displayName: user.displayName || 'User',
               heightUnit: 'cm',
               activityLevel: 'moderate',

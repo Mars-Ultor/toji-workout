@@ -310,7 +310,8 @@ function ProgramEditor({ program, onSave, onClose }: {
 
   const handleUpdateField = (dayIndex: number, exIndex: number, field: string, value: number) => {
     const updated = [...days];
-    (updated[dayIndex].exercises[exIndex] as Record<string, unknown>)[field] = value;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (updated[dayIndex].exercises[exIndex] as any)[field] = value;
     setDays(updated);
   };
 
