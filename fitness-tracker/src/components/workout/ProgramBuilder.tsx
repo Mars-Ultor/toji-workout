@@ -69,10 +69,12 @@ export function ProgramBuilder() {
           exerciseId: ex.exercise.id,
           exerciseName: ex.exercise.name,
           muscleGroup: ex.exercise.muscleGroup,
+          category: ex.exercise.category,
           sets: ex.sets,
           repsMin: ex.repsMin,
           repsMax: ex.repsMax,
           restSeconds: ex.restSeconds,
+          duration: ex.exercise.duration,
         })),
       })),
       createdBy: user.uid,
@@ -242,25 +244,45 @@ export function ProgramBuilder() {
           </div>
 
           <div className="space-y-2">
-            {program.days.map((day, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between bg-gray-900 rounded-lg p-3"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-200">{day.name}</div>
-                  <div className="text-xs text-gray-500 mt-0.5 truncate">
-                    {day.exercises.map((ex) => ex.exerciseName).join(' · ') || 'No exercises'}
+            {program.days.map((day, i) => {
+              const warmupCount = day.exercises.filter((ex) => ex.category === 'warmup').length;
+              const cooldownCount = day.exercises.filter((ex) => ex.category === 'stretch').length;
+              const mainCount = day.exercises.filter((ex) => !['warmup', 'stretch'].includes(ex.category || '')).length;
+              
+              return (
+                <div
+                  key={i}
+                  className="flex items-center justify-between bg-gray-900 rounded-lg p-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-gray-200">{day.name}</div>
+                    <div className="text-xs text-gray-500 mt-0.5 truncate">
+                      {day.exercises.filter((ex) => !['warmup', 'stretch'].includes(ex.category || '')).map((ex) => ex.exerciseName).join(' · ') || 'No exercises'}
+                    </div>
+                    <div className="flex gap-2 mt-1 text-[10px] text-gray-600">
+                      {warmupCount > 0 && (
+                        <span className="text-orange-400/70">
+                          {warmupCount} warmup
+                        </span>
+                      )}
+                      {mainCount > 0 && (
+                        <span className="text-red-400/70">
+                          {mainCount} main · {day.exercises.filter((ex) => !['warmup', 'stretch'].includes(ex.category || '')).reduce((a, e) => a + e.sets, 0)} sets
+                        </span>
+                      )}
+                      {cooldownCount > 0 && (
+                        <span className="text-blue-400/70">
+                          {cooldownCount} cooldown
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-[10px] text-gray-600 mt-0.5">
-                    {day.exercises.length} exercises · {day.exercises.reduce((a, e) => a + e.sets, 0)} sets
-                  </div>
+                  <Button size="sm" onClick={() => handleStartDay(day)} className="ml-3 flex-shrink-0">
+                    <Play size={14} /> Start
+                  </Button>
                 </div>
-                <Button size="sm" onClick={() => handleStartDay(day)} className="ml-3 flex-shrink-0">
-                  <Play size={14} /> Start
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       ))}
@@ -293,10 +315,12 @@ function ProgramEditor({ program, onSave, onClose }: {
       exerciseId: exercise.id,
       exerciseName: exercise.name,
       muscleGroup: exercise.muscleGroup,
-      sets: 3,
-      repsMin: 8,
-      repsMax: 12,
-      restSeconds: 90,
+      category: exercise.category,
+      sets: exercise.category === 'warmup' || exercise.category === 'stretch' ? 1 : 3,
+      repsMin: exercise.category === 'warmup' || exercise.category === 'stretch' ? 1 : 8,
+      repsMax: exercise.category === 'warmup' || exercise.category === 'stretch' ? 1 : 12,
+      restSeconds: exercise.category === 'warmup' || exercise.category === 'stretch' ? 0 : 90,
+      duration: exercise.duration,
     });
     setDays(updated);
     setShowExercisePicker(null);
@@ -339,7 +363,13 @@ function ProgramEditor({ program, onSave, onClose }: {
           />
         </div>
 
-        {days.map((day, dayIndex) => (
+        {days.map((day, dayIndex) => {
+          // Group exercises by category
+          const warmupExercises = day.exercises.map((ex, idx) => ({ ex, idx })).filter(({ ex }) => ex.category === 'warmup');
+          const mainExercises = day.exercises.map((ex, idx) => ({ ex, idx })).filter(({ ex }) => !['warmup', 'stretch'].includes(ex.category || ''));
+          const cooldownExercises = day.exercises.map((ex, idx) => ({ ex, idx })).filter(({ ex }) => ex.category === 'stretch');
+
+          return (
           <Card key={dayIndex}>
             <div className="flex items-center justify-between mb-3">
               <input
@@ -361,69 +391,135 @@ function ProgramEditor({ program, onSave, onClose }: {
               )}
             </div>
 
-            {day.exercises.map((ex, exIndex) => (
-              <div key={exIndex} className="flex items-center gap-2 py-2 border-b border-gray-800 last:border-0">
-                <GripVertical size={14} className="text-gray-600 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm text-gray-200 truncate">{ex.exerciseName}</div>
-                  <div className="flex gap-2 mt-1">
-                    <label className="text-[10px] text-gray-500">
-                      Sets
-                      <input
-                        type="number"
-                        className="block w-12 mt-0.5 bg-gray-800 rounded px-1.5 py-1 text-xs text-white"
-                        value={ex.sets}
-                        onChange={(e) => handleUpdateField(dayIndex, exIndex, 'sets', +e.target.value)}
-                        min={1}
-                      />
-                    </label>
-                    <label className="text-[10px] text-gray-500">
-                      Reps
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <input
-                          type="number"
-                          className="w-12 bg-gray-800 rounded px-1.5 py-1 text-xs text-white"
-                          value={ex.repsMin}
-                          onChange={(e) => handleUpdateField(dayIndex, exIndex, 'repsMin', +e.target.value)}
-                          min={1}
-                        />
-                        <span className="text-gray-600">-</span>
-                        <input
-                          type="number"
-                          className="w-12 bg-gray-800 rounded px-1.5 py-1 text-xs text-white"
-                          value={ex.repsMax}
-                          onChange={(e) => handleUpdateField(dayIndex, exIndex, 'repsMax', +e.target.value)}
-                          min={1}
-                        />
-                      </div>
-                    </label>
-                    <label className="text-[10px] text-gray-500">
-                      Rest
-                      <input
-                        type="number"
-                        className="block w-14 mt-0.5 bg-gray-800 rounded px-1.5 py-1 text-xs text-white"
-                        value={ex.restSeconds}
-                        onChange={(e) => handleUpdateField(dayIndex, exIndex, 'restSeconds', +e.target.value)}
-                        min={0}
-                        step={15}
-                      />
-                    </label>
-                  </div>
+            {/* Warmup section */}
+            {warmupExercises.length > 0 && (
+              <div className="mb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-orange-500/30 to-transparent" />
+                  <h4 className="text-[10px] font-semibold text-orange-400 uppercase tracking-wider">Warmup</h4>
+                  <div className="h-px flex-1 bg-gradient-to-l from-transparent via-orange-500/30 to-transparent" />
                 </div>
-                <button
-                  onClick={() => handleRemoveExercise(dayIndex, exIndex)}
-                  className="text-red-400 hover:text-red-300 flex-shrink-0"
-                >
-                  <X size={14} />
-                </button>
+                {warmupExercises.map(({ ex, idx: exIndex }) => (
+                  <div key={exIndex} className="flex items-center gap-2 py-2 border-b border-gray-800/50">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-gray-300 truncate">{ex.exerciseName}</div>
+                      {ex.duration && (
+                        <div className="text-[10px] text-orange-400/70 mt-0.5">{ex.duration}s</div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleRemoveExercise(dayIndex, exIndex)}
+                      className="text-gray-600 hover:text-gray-400 flex-shrink-0"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
+
+            {/* Main exercises section */}
+            {mainExercises.length > 0 && (
+              <div className="mb-3">
+                {warmupExercises.length > 0 && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/30 to-transparent" />
+                    <h4 className="text-[10px] font-semibold text-red-400 uppercase tracking-wider">Main Workout</h4>
+                    <div className="h-px flex-1 bg-gradient-to-l from-transparent via-red-500/30 to-transparent" />
+                  </div>
+                )}
+                {mainExercises.map(({ ex, idx: exIndex }) => (
+                  <div key={exIndex} className="flex items-center gap-2 py-2 border-b border-gray-800 last:border-0">
+                    <GripVertical size={14} className="text-gray-600 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-gray-200 truncate">{ex.exerciseName}</div>
+                      <div className="flex gap-2 mt-1">
+                        <label className="text-[10px] text-gray-500">
+                          Sets
+                          <input
+                            type="number"
+                            className="block w-12 mt-0.5 bg-gray-800 rounded px-1.5 py-1 text-xs text-white"
+                            value={ex.sets}
+                            onChange={(e) => handleUpdateField(dayIndex, exIndex, 'sets', +e.target.value)}
+                            min={1}
+                          />
+                        </label>
+                        <label className="text-[10px] text-gray-500">
+                          Reps
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <input
+                              type="number"
+                              className="w-12 bg-gray-800 rounded px-1.5 py-1 text-xs text-white"
+                              value={ex.repsMin}
+                              onChange={(e) => handleUpdateField(dayIndex, exIndex, 'repsMin', +e.target.value)}
+                              min={1}
+                            />
+                            <span className="text-gray-600">-</span>
+                            <input
+                              type="number"
+                              className="w-12 bg-gray-800 rounded px-1.5 py-1 text-xs text-white"
+                              value={ex.repsMax}
+                              onChange={(e) => handleUpdateField(dayIndex, exIndex, 'repsMax', +e.target.value)}
+                              min={1}
+                            />
+                          </div>
+                        </label>
+                        <label className="text-[10px] text-gray-500">
+                          Rest
+                          <input
+                            type="number"
+                            className="block w-14 mt-0.5 bg-gray-800 rounded px-1.5 py-1 text-xs text-white"
+                            value={ex.restSeconds}
+                            onChange={(e) => handleUpdateField(dayIndex, exIndex, 'restSeconds', +e.target.value)}
+                            min={0}
+                            step={15}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveExercise(dayIndex, exIndex)}
+                      className="text-red-400 hover:text-red-300 flex-shrink-0"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Cooldown section */}
+            {cooldownExercises.length > 0 && (
+              <div className="mb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
+                  <h4 className="text-[10px] font-semibold text-blue-400 uppercase tracking-wider">Cooldown</h4>
+                  <div className="h-px flex-1 bg-gradient-to-l from-transparent via-blue-500/30 to-transparent" />
+                </div>
+                {cooldownExercises.map(({ ex, idx: exIndex }) => (
+                  <div key={exIndex} className="flex items-center gap-2 py-2 border-b border-gray-800/50">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-gray-300 truncate">{ex.exerciseName}</div>
+                      {ex.duration && (
+                        <div className="text-[10px] text-blue-400/70 mt-0.5">{ex.duration}s hold</div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleRemoveExercise(dayIndex, exIndex)}
+                      className="text-gray-600 hover:text-gray-400 flex-shrink-0"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <Button variant="ghost" size="sm" className="mt-2 w-full" onClick={() => setShowExercisePicker(dayIndex)}>
               <Plus size={14} /> Add Exercise
             </Button>
           </Card>
-        ))}
+        );})}
 
         <Button variant="secondary" className="w-full" onClick={handleAddDay}>
           <Plus size={14} /> Add Day

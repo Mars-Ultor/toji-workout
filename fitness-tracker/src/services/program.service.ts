@@ -13,10 +13,12 @@ export interface SavedProgramExercise {
   exerciseId: string;
   exerciseName: string;
   muscleGroup: string[];
+  category?: 'compound' | 'isolation' | 'cardio' | 'warmup' | 'stretch'; // Optional for backward compatibility
   sets: number;
   repsMin: number;
   repsMax: number;
   restSeconds: number;
+  duration?: number; // Duration in seconds for warmup/stretch exercises
 }
 
 export interface SavedProgramDay {
