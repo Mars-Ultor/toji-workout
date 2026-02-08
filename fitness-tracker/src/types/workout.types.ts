@@ -1,7 +1,7 @@
 export interface Exercise {
   id: string;
   name: string;
-  category: 'compound' | 'isolation' | 'cardio';
+  category: 'compound' | 'isolation' | 'cardio' | 'warmup' | 'stretch';
   muscleGroup: string[];
   equipment: string[];
   difficulty: 'beginner' | 'intermediate' | 'advanced';
@@ -9,6 +9,7 @@ export interface Exercise {
   videoUrl?: string;
   imageUrl?: string;
   secondaryMuscles?: string[];
+  duration?: number; // Duration in seconds for stretches/warmups
 }
 
 export interface WorkoutSet {

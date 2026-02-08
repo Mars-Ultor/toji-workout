@@ -53,6 +53,29 @@ export const GOALS = [
 ] as const;
 
 export const DEFAULT_EXERCISES = [
+  // Warmup exercises
+  { name: 'Jumping Jacks', category: 'warmup' as const, muscleGroup: ['Full Body'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 60 },
+  { name: 'Arm Circles', category: 'warmup' as const, muscleGroup: ['Shoulders'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 30 },
+  { name: 'Leg Swings', category: 'warmup' as const, muscleGroup: ['Hamstrings', 'Quads'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 30 },
+  { name: 'Hip Circles', category: 'warmup' as const, muscleGroup: ['Glutes'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 30 },
+  { name: 'Torso Twists', category: 'warmup' as const, muscleGroup: ['Core'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 30 },
+  { name: 'High Knees', category: 'warmup' as const, muscleGroup: ['Quads', 'Core'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 30 },
+  { name: 'Butt Kicks', category: 'warmup' as const, muscleGroup: ['Hamstrings'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 30 },
+  { name: 'Inchworms', category: 'warmup' as const, muscleGroup: ['Full Body'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 60 },
+  // Stretch exercises
+  { name: 'Quad Stretch', category: 'stretch' as const, muscleGroup: ['Quads'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 30 },
+  { name: 'Hamstring Stretch', category: 'stretch' as const, muscleGroup: ['Hamstrings'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 30 },
+  { name: 'Calf Stretch', category: 'stretch' as const, muscleGroup: ['Calves'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 30 },
+  { name: 'Hip Flexor Stretch', category: 'stretch' as const, muscleGroup: ['Glutes'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 30 },
+  { name: 'Chest Stretch', category: 'stretch' as const, muscleGroup: ['Chest'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 30 },
+  { name: 'Shoulder Stretch', category: 'stretch' as const, muscleGroup: ['Shoulders'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 30 },
+  { name: 'Tricep Stretch', category: 'stretch' as const, muscleGroup: ['Triceps'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 30 },
+  { name: 'Cat-Cow Stretch', category: 'stretch' as const, muscleGroup: ['Back', 'Core'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 60 },
+  { name: 'Child\'s Pose', category: 'stretch' as const, muscleGroup: ['Back', 'Shoulders'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 60 },
+  { name: 'Pigeon Pose', category: 'stretch' as const, muscleGroup: ['Glutes', 'Hamstrings'], equipment: ['Bodyweight'], difficulty: 'intermediate' as const, duration: 60 },
+  { name: 'Cobra Stretch', category: 'stretch' as const, muscleGroup: ['Back', 'Core'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 30 },
+  { name: 'Seated Spinal Twist', category: 'stretch' as const, muscleGroup: ['Back', 'Core'], equipment: ['Bodyweight'], difficulty: 'beginner' as const, duration: 30 },
+  // Compound exercises
   { name: 'Push-ups', category: 'compound' as const, muscleGroup: ['Chest', 'Triceps', 'Shoulders'], equipment: ['Bodyweight'], difficulty: 'beginner' as const },
   { name: 'Pull-ups', category: 'compound' as const, muscleGroup: ['Back', 'Biceps'], equipment: ['Bodyweight'], difficulty: 'intermediate' as const },
   { name: 'Squats', category: 'compound' as const, muscleGroup: ['Quads', 'Glutes', 'Hamstrings'], equipment: ['Bodyweight'], difficulty: 'beginner' as const },

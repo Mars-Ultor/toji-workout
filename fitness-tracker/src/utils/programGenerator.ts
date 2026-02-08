@@ -95,6 +95,28 @@ const FALLBACK_EXERCISE_DB: Exercise[] = [
   { id: 'cable-woodchop', name: 'Cable Woodchop', category: 'isolation', muscleGroup: ['Core'], equipment: ['Cable'], difficulty: 'beginner' },
   { id: 'ab-wheel', name: 'Ab Wheel Rollout', category: 'isolation', muscleGroup: ['Core'], equipment: ['Bodyweight'], difficulty: 'intermediate' },
   { id: 'russian-twist', name: 'Russian Twist', category: 'isolation', muscleGroup: ['Core'], equipment: ['Bodyweight'], difficulty: 'beginner' },
+  // Warmup
+  { id: 'jumping-jacks', name: 'Jumping Jacks', category: 'warmup', muscleGroup: ['Full Body'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 60 },
+  { id: 'arm-circles', name: 'Arm Circles', category: 'warmup', muscleGroup: ['Shoulders'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 30 },
+  { id: 'leg-swings', name: 'Leg Swings', category: 'warmup', muscleGroup: ['Hamstrings', 'Quads'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 30 },
+  { id: 'hip-circles', name: 'Hip Circles', category: 'warmup', muscleGroup: ['Glutes'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 30 },
+  { id: 'torso-twists', name: 'Torso Twists', category: 'warmup', muscleGroup: ['Core'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 30 },
+  { id: 'high-knees', name: 'High Knees', category: 'warmup', muscleGroup: ['Quads', 'Core'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 30 },
+  { id: 'butt-kicks', name: 'Butt Kicks', category: 'warmup', muscleGroup: ['Hamstrings'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 30 },
+  { id: 'inchworms', name: 'Inchworms', category: 'warmup', muscleGroup: ['Full Body'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 60 },
+  // Stretches
+  { id: 'quad-stretch', name: 'Quad Stretch', category: 'stretch', muscleGroup: ['Quads'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 30 },
+  { id: 'hamstring-stretch', name: 'Hamstring Stretch', category: 'stretch', muscleGroup: ['Hamstrings'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 30 },
+  { id: 'calf-stretch', name: 'Calf Stretch', category: 'stretch', muscleGroup: ['Calves'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 30 },
+  { id: 'hip-flexor-stretch', name: 'Hip Flexor Stretch', category: 'stretch', muscleGroup: ['Glutes'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 30 },
+  { id: 'chest-stretch', name: 'Chest Stretch', category: 'stretch', muscleGroup: ['Chest'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 30 },
+  { id: 'shoulder-stretch', name: 'Shoulder Stretch', category: 'stretch', muscleGroup: ['Shoulders'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 30 },
+  { id: 'tricep-stretch', name: 'Tricep Stretch', category: 'stretch', muscleGroup: ['Triceps'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 30 },
+  { id: 'cat-cow', name: 'Cat-Cow Stretch', category: 'stretch', muscleGroup: ['Back', 'Core'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 60 },
+  { id: 'childs-pose', name: "Child's Pose", category: 'stretch', muscleGroup: ['Back', 'Shoulders'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 60 },
+  { id: 'pigeon-pose', name: 'Pigeon Pose', category: 'stretch', muscleGroup: ['Glutes', 'Hamstrings'], equipment: ['Bodyweight'], difficulty: 'intermediate', duration: 60 },
+  { id: 'cobra-stretch', name: 'Cobra Stretch', category: 'stretch', muscleGroup: ['Back', 'Core'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 30 },
+  { id: 'seated-spinal-twist', name: 'Seated Spinal Twist', category: 'stretch', muscleGroup: ['Back', 'Core'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 30 },
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -159,6 +181,11 @@ function getScheme(
   goal: ProgramWizardAnswers['goal'],
   category: Exercise['category']
 ): { sets: number; repsMin: number; repsMax: number; restSeconds: number } {
+  // Warmup and stretch exercises use duration, not traditional sets/reps
+  if (category === 'warmup' || category === 'stretch') {
+    return { sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0 };
+  }
+  
   if (goal === 'strength') {
     return category === 'compound'
       ? { sets: 5, repsMin: 3, repsMax: 5, restSeconds: 180 }
@@ -387,9 +414,36 @@ export async function generateProgram(answers: ProgramWizardAnswers): Promise<Ge
       ...getScheme(answers.goal, exercise.category),
     }));
 
+    // Add warmup exercises (3-4 warmup movements)
+    const warmupPool = pool.filter((e) => e.category === 'warmup');
+    const warmupExercises: GeneratedExercise[] = warmupPool
+      .slice(0, 3)
+      .map((exercise) => ({
+        exercise,
+        sets: 1,
+        repsMin: 1,
+        repsMax: 1,
+        restSeconds: 0,
+      }));
+
+    // Add cooldown stretches (4-6 stretches targeting worked muscles)
+    const stretchPool = pool.filter((e) => e.category === 'stretch');
+    const relevantStretches = stretchPool.filter((stretch) =>
+      stretch.muscleGroup.some((muscle) => splitDay.muscles.includes(muscle))
+    );
+    const cooldownExercises: GeneratedExercise[] = (relevantStretches.length > 0 ? relevantStretches : stretchPool)
+      .slice(0, 5)
+      .map((exercise) => ({
+        exercise,
+        sets: 1,
+        repsMin: 1,
+        repsMax: 1,
+        restSeconds: 0,
+      }));
+
     return {
       name: splitDay.name,
-      exercises,
+      exercises: [...warmupExercises, ...exercises, ...cooldownExercises],
     };
   });
 

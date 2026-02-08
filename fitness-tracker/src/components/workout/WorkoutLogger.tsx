@@ -213,86 +213,179 @@ export function WorkoutLogger() {
       )}
 
       {/* Exercises */}
-      {activeWorkout.exercises.map((ex, exIndex) => (
-        <Card key={exIndex}>
-          <div
-            className="flex items-center justify-between cursor-pointer"
-            onClick={() => setExpandedExercise(expandedExercise === exIndex ? null : exIndex)}
-          >
-            <div>
-              <h3 className="font-semibold text-gray-200">{ex.exercise.name}</h3>
-              <div className="flex gap-1.5 mt-1">
-                {ex.exercise.muscleGroup.map((mg) => (
-                  <span key={mg} className="text-[10px] bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded">
-                    {mg}
-                  </span>
+      {(() => {
+        // Group exercises by category
+        const warmupExercises = activeWorkout.exercises.map((ex, idx) => ({ ex, idx }))
+          .filter(({ ex }) => ex.exercise.category === 'warmup');
+        const mainExercises = activeWorkout.exercises.map((ex, idx) => ({ ex, idx }))
+          .filter(({ ex }) => !['warmup', 'stretch'].includes(ex.exercise.category));
+        const cooldownExercises = activeWorkout.exercises.map((ex, idx) => ({ ex, idx }))
+          .filter(({ ex }) => ex.exercise.category === 'stretch');
+
+        return (
+          <>
+            {/* Warmup section */}
+            {warmupExercises.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 px-2">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-orange-500/30 to-transparent" />
+                  <h3 className="text-xs font-semibold text-orange-400 uppercase tracking-wider">Warmup</h3>
+                  <div className="h-px flex-1 bg-gradient-to-l from-transparent via-orange-500/30 to-transparent" />
+                </div>
+                {warmupExercises.map(({ ex, idx: exIndex }) => (
+                  <Card key={exIndex} className="bg-orange-950/20 border-orange-500/10">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-300">{ex.exercise.name}</h3>
+                        {ex.exercise.duration && (
+                          <p className="text-xs text-gray-500 mt-0.5">{ex.exercise.duration}s</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => removeExercise(exIndex)}
+                        className="text-xs text-gray-600 hover:text-gray-400 px-2"
+                      >
+                        Skip
+                      </button>
+                    </div>
+                  </Card>
                 ))}
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {/* Reorder buttons */}
-              <div className="flex flex-col">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (exIndex > 0) moveExercise(exIndex, exIndex - 1);
-                  }}
-                  disabled={exIndex === 0}
-                  className="text-gray-600 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <ArrowUp size={12} />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (exIndex < activeWorkout.exercises.length - 1)
-                      moveExercise(exIndex, exIndex + 1);
-                  }}
-                  disabled={exIndex === activeWorkout.exercises.length - 1}
-                  className="text-gray-600 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <ArrowDown size={12} />
-                </button>
-              </div>
-              <span className="text-xs text-gray-500">
-                {ex.sets.filter((s) => s.completed).length}/{ex.sets.length}
-              </span>
-              {expandedExercise === exIndex ? (
-                <ChevronUp size={16} className="text-gray-500" />
-              ) : (
-                <ChevronDown size={16} className="text-gray-500" />
-              )}
-            </div>
-          </div>
+            )}
 
-          {expandedExercise === exIndex && (
-            <div className="mt-4 space-y-3">
-              <SetTracker
-                sets={ex.sets}
-                onUpdateSet={(setIndex, data) => updateSet(exIndex, setIndex, data)}
-                onAddSet={() => addSet(exIndex)}
-                onRemoveSet={(setIndex) => removeSet(exIndex, setIndex)}
-                suggestion={historyLoaded ? getSuggestionFor(ex.exerciseId || ex.exercise?.id) : null}
-                history={historyLoaded ? getHistory(ex.exerciseId || ex.exercise?.id) : null}
-              />
-              <button
-                onClick={() => removeExercise(exIndex)}
-                className="text-xs text-red-400 hover:text-red-300"
-              >
-                Remove Exercise
-              </button>
-              {/* Exercise notes */}
-              <textarea
-                placeholder="Notes for this exercise (e.g. form cues, pain)..."
-                value={ex.notes || ''}
-                onChange={(e) => updateExerciseNotes(exIndex, e.target.value)}
-                className="w-full bg-gray-800 rounded-lg p-2 text-xs text-gray-300 placeholder-gray-600 resize-none border border-gray-700 focus:border-red-500 outline-none"
-                rows={2}
-              />
-            </div>
-          )}
-        </Card>
-      ))}
+            {/* Main exercises section */}
+            {mainExercises.length > 0 && (
+              <div className="space-y-2">
+                {warmupExercises.length > 0 && (
+                  <div className="flex items-center gap-2 px-2 mt-6">
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/30 to-transparent" />
+                    <h3 className="text-xs font-semibold text-red-400 uppercase tracking-wider">Main Workout</h3>
+                    <div className="h-px flex-1 bg-gradient-to-l from-transparent via-red-500/30 to-transparent" />
+                  </div>
+                )}
+                {mainExercises.map(({ ex, idx: exIndex }) => (
+                  <Card key={exIndex}>
+                    <div
+                      className="flex items-center justify-between cursor-pointer"
+                      onClick={() => setExpandedExercise(expandedExercise === exIndex ? null : exIndex)}
+                    >
+                      <div>
+                        <h3 className="font-semibold text-gray-200">{ex.exercise.name}</h3>
+                        <div className="flex gap-1.5 mt-1">
+                          {ex.exercise.muscleGroup.map((mg) => (
+                            <span key={mg} className="text-[10px] bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded">
+                              {mg}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {/* Reorder buttons */}
+                        <div className="flex flex-col">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (exIndex > 0) moveExercise(exIndex, exIndex - 1);
+                            }}
+                            disabled={exIndex === 0}
+                            className="text-gray-600 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <ArrowUp size={12} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (exIndex < activeWorkout.exercises.length - 1)
+                                moveExercise(exIndex, exIndex + 1);
+                            }}
+                            disabled={exIndex === activeWorkout.exercises.length - 1}
+                            className="text-gray-600 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <ArrowDown size={12} />
+                          </button>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {ex.sets.filter((s) => s.completed).length}/{ex.sets.length}
+                        </span>
+                        {expandedExercise === exIndex ? (
+                          <ChevronUp size={16} className="text-gray-500" />
+                        ) : (
+                          <ChevronDown size={16} className="text-gray-500" />
+                        )}
+                      </div>
+                    </div>
+
+                    {expandedExercise === exIndex && (
+                      <div className="mt-4 space-y-3">
+                        <SetTracker
+                          sets={ex.sets}
+                          onUpdateSet={(setIndex, data) => updateSet(exIndex, setIndex, data)}
+                          onAddSet={() => addSet(exIndex)}
+                          onRemoveSet={(setIndex) => removeSet(exIndex, setIndex)}
+                          suggestion={historyLoaded ? getSuggestionFor(ex.exerciseId || ex.exercise?.id) : null}
+                          history={historyLoaded ? getHistory(ex.exerciseId || ex.exercise?.id) : null}
+                        />
+                        <button
+                          onClick={() => removeExercise(exIndex)}
+                          className="text-xs text-red-400 hover:text-red-300"
+                        >
+                          Remove Exercise
+                        </button>
+                        {/* Exercise notes */}
+                        <textarea
+                          placeholder="Notes for this exercise (e.g. form cues, pain)..."
+                          value={ex.notes || ''}
+                          onChange={(e) => updateExerciseNotes(exIndex, e.target.value)}
+                          className="w-full bg-gray-800 rounded-lg p-2 text-xs text-gray-300 placeholder-gray-600 resize-none border border-gray-700 focus:border-red-500 outline-none"
+                          rows={2}
+                        />
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Cooldown section */}
+            {cooldownExercises.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 px-2 mt-6">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
+                  <h3 className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Cooldown & Stretching</h3>
+                  <div className="h-px flex-1 bg-gradient-to-l from-transparent via-blue-500/30 to-transparent" />
+                </div>
+                {cooldownExercises.map(({ ex, idx: exIndex }) => (
+                  <Card key={exIndex} className="bg-blue-950/20 border-blue-500/10">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-300">{ex.exercise.name}</h3>
+                        {ex.exercise.duration && (
+                          <p className="text-xs text-gray-500 mt-0.5">{ex.exercise.duration}s hold (each side if applicable)</p>
+                        )}
+                        {ex.exercise.muscleGroup.length > 0 && (
+                          <div className="flex gap-1 mt-1">
+                            {ex.exercise.muscleGroup.map((mg) => (
+                              <span key={mg} className="text-[10px] bg-blue-900/30 text-blue-400/70 px-1.5 py-0.5 rounded">
+                                {mg}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => removeExercise(exIndex)}
+                        className="text-xs text-gray-600 hover:text-gray-400 px-2"
+                      >
+                        Skip
+                      </button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Add exercise button */}
       <Button
