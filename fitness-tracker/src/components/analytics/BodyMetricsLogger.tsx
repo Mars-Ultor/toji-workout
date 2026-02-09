@@ -3,11 +3,13 @@ import { Card } from '../shared/Card';
 import { Button } from '../shared/Button';
 import { Input } from '../shared/Input';
 import { useBodyMetrics } from '../../hooks/useBodyMetrics';
+import { useAuthStore } from '../../store/authStore';
 import { useToastStore } from '../../store/toastStore';
 import { Scale, Plus } from 'lucide-react';
 
 export function BodyMetricsLogger() {
   const { addMetrics, latestWeight } = useBodyMetrics();
+  const { profile } = useAuthStore();
   const { addToast } = useToastStore();
   const [isOpen, setIsOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -47,7 +49,7 @@ export function BodyMetricsLogger() {
           </div>
           <div>
             <div className="text-sm font-medium text-gray-200">
-              {latestWeight ? `${latestWeight} kg` : 'No weight logged'}
+              {latestWeight ? `${latestWeight} ${profile?.preferences.weightUnit || 'lbs'}` : 'No weight logged'}
             </div>
             <div className="text-xs text-gray-500">Current weight</div>
           </div>
@@ -67,7 +69,7 @@ export function BodyMetricsLogger() {
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <Input
-            label="Weight (kg)"
+            label={`Weight (${profile?.preferences.weightUnit || 'lbs'})`}
             type="number"
             step="0.1"
             value={weight}

@@ -9,9 +9,11 @@ import {
 } from 'recharts';
 import { Card } from '../shared/Card';
 import { useBodyMetrics } from '../../hooks/useBodyMetrics';
+import { useAuthStore } from '../../store/authStore';
 
 export function WeightChart() {
   const { metrics } = useBodyMetrics();
+  const { profile } = useAuthStore();
   const data = metrics || [];
 
   const chartData = [...data]
@@ -59,7 +61,7 @@ export function WeightChart() {
               color: '#f3f4f6',
               fontSize: '12px',
             }}
-            formatter={(value) => [`${value} kg`, 'Weight']}
+            formatter={(value) => [`${value} ${profile?.preferences.weightUnit || 'lbs'}`, 'Weight']}
           />
           <Line
             type="monotone"

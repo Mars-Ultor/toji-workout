@@ -10,9 +10,11 @@ import {
 } from 'recharts';
 import { Card } from '../shared/Card';
 import { useWorkoutStore } from '../../store/workoutStore';
+import { useAuthStore } from '../../store/authStore';
 
 export function StrengthChart() {
   const { workoutHistory } = useWorkoutStore();
+  const { profile } = useAuthStore();
   const workouts = workoutHistory;
 
   // Group by exercise name and track max weight over time
@@ -87,6 +89,7 @@ export function StrengthChart() {
               color: '#f3f4f6',
               fontSize: '12px',
             }}
+            formatter={(value) => `${value} ${profile?.preferences.weightUnit || 'lbs'}`}
           />
           <Legend
             wrapperStyle={{ fontSize: '11px', color: '#9ca3af' }}

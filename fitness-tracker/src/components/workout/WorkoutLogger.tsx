@@ -15,7 +15,7 @@ import { generateProgramUpdates } from '../../services/progression.service';
 import type { Exercise } from '../../types/workout.types';
 
 export function WorkoutLogger() {
-  const { user } = useAuthStore();
+  const { user, profile } = useAuthStore();
   const {
     activeWorkout,
     startWorkout,
@@ -188,7 +188,7 @@ export function WorkoutLogger() {
           <div className="flex gap-4 text-xs text-gray-500 mt-1">
             <span>{activeWorkout.exercises.length} exercises</span>
             <span>{totalSets} sets done</span>
-            <span>{totalVolume.toLocaleString()} kg volume</span>
+            <span>{totalVolume.toLocaleString()} {profile?.preferences.weightUnit || 'lbs'} volume</span>
           </div>
         </div>
         <div className="flex gap-2">
@@ -324,6 +324,7 @@ export function WorkoutLogger() {
                           onRemoveSet={(setIndex) => removeSet(exIndex, setIndex)}
                           suggestion={historyLoaded ? getSuggestionFor(ex.exerciseId || ex.exercise?.id) : null}
                           history={historyLoaded ? getHistory(ex.exerciseId || ex.exercise?.id) : null}
+                          weightUnit={profile?.preferences.weightUnit || 'lbs'}
                         />
                         <button
                           onClick={() => removeExercise(exIndex)}

@@ -67,7 +67,7 @@ export default function Dashboard() {
                 {latestWeight ? `${latestWeight}` : '--'}
               </div>
               <div className="text-[11px] text-gray-500">
-                {latestWeight ? 'kg' : 'No weight'}
+                {latestWeight ? profile?.preferences.weightUnit || 'lbs' : 'No weight'}
               </div>
             </div>
           </div>

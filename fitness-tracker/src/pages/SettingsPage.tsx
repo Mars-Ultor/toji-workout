@@ -44,9 +44,10 @@ export default function SettingsPage() {
           macroDisplay: newSettings.showMacros ? ('grams' as const) : ('percentages' as const),
           notifications: newSettings.notifications,
         };
-        await updateUserProfile(user.uid, { preferences: prefs });
+        const heightUnit = newSettings.units === 'imperial' ? ('inches' as const) : ('cm' as const);
+        await updateUserProfile(user.uid, { preferences: prefs, heightUnit });
         if (profile) {
-          setProfile({ ...profile, preferences: prefs });
+          setProfile({ ...profile, preferences: prefs, heightUnit });
         }
       } catch {
         addToast({ type: 'error', message: 'Failed to save settings' });

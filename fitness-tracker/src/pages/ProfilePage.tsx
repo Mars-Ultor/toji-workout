@@ -182,14 +182,14 @@ export default function ProfilePage() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Height (cm)"
+              label={`Height (${profile?.heightUnit || 'inches'})`}
               type="number"
               value={formData.height}
               onChange={(e) => handleChange('height', e.target.value)}
               disabled={!isEditing}
             />
             <Input
-              label="Weight (kg)"
+              label={`Weight (${profile?.preferences.weightUnit || 'lbs'})`}
               type="number"
               value={formData.weight}
               onChange={(e) => handleChange('weight', e.target.value)}
