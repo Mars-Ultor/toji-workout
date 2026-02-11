@@ -20,7 +20,6 @@ export async function logWorkout(
   const docRef = await addDoc(collection(db, `workoutLogs/${userId}/sessions`), {
     ...workout,
     userId,
-    date: new Date(),
   });
   return docRef.id;
 }

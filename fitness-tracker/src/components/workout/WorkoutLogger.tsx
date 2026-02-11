@@ -102,8 +102,9 @@ export function WorkoutLogger() {
 
       endWorkout();
       addToast({ type: 'success', message: 'Workout saved!' });
-    } catch {
-      addToast({ type: 'error', message: 'Failed to save workout' });
+    } catch (error) {
+      console.error('Error saving workout:', error);
+      addToast({ type: 'error', message: `Failed to save workout: ${error instanceof Error ? error.message : 'Unknown error'}` });
     } finally {
       setSaving(false);
     }
