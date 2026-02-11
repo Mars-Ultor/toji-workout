@@ -6,8 +6,12 @@ import {
   limit,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Workout, WorkoutSet } from '../types/workout.types';
+import type { Workout, WorkoutSet, Exercise } from '../types/workout.types';
 import { calculateProgression } from '../utils/calculations';
+import { 
+  isBodyweightExercise, 
+  analyzeBodyweightAdaptation 
+} from './bodyweightAdaptation.service';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -44,12 +48,17 @@ export interface DeloadRecommendation {
 export interface AdaptationRecommendation {
   exerciseId: string;
   exerciseName: string;
-  adaptationType: 'increase-volume' | 'increase-intensity' | 'decrease-volume' | 'swap-exercise' | 'deload' | 'maintain';
+  adaptationType: 'increase-volume' | 'increase-intensity' | 'decrease-volume' | 'swap-exercise' | 'deload' | 'maintain' | 'progress-variation' | 'regress-variation';
   reason: string;
   suggestedSets?: number;
   suggestedRepsRange?: string;
   suggestedRestSeconds?: number;
   alternativeExercises?: string[]; // IDs of similar exercises to swap to
+  progressionVariation?: {
+    name: string;
+    id: string;
+    difficulty: 'easier' | 'harder';
+  };
 }
 
 export interface ProgressionScheme {
@@ -418,8 +427,14 @@ export function generateProgramUpdates(
 export function analyzeExerciseAdaptation(
   history: ExerciseHistory,
   currentSets: number,
-  currentRepsRange: { min: number; max: number }
+  currentRepsRange: { min: number; max: number },
+  exercise?: Exercise
 ): AdaptationRecommendation {
+  // Route to bodyweight-specific adaptation if applicable
+  if (exercise && isBodyweightExercise(exercise)) {
+    return analyzeBodyweightAdaptation(exercise, history, currentSets, currentRepsRange);
+  }
+
   if (history.sessions.length < 3) {
     return {
       exerciseId: history.exerciseId,

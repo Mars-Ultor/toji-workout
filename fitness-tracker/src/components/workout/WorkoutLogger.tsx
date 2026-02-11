@@ -6,12 +6,14 @@ import { Card } from '../shared/Card';
 import { ExerciseList } from './ExerciseList';
 import { SetTracker } from './SetTracker';
 import { RestTimer } from './RestTimer';
+import { BodyweightProgressionDisplay } from './BodyweightProgressionDisplay';
 import { useWorkoutStore } from '../../store/workoutStore';
 import { useAuthStore } from '../../store/authStore';
 import { logWorkout } from '../../services/workout.service';
 import { useToastStore } from '../../store/toastStore';
 import { useExerciseHistory, useDeloadCheck } from '../../hooks/useExerciseHistory';
-import { generateProgramUpdates } from '../../services/progression.service';
+import { generateProgramUpdates, analyzeExerciseAdaptation } from '../../services/progression.service';
+import { isBodyweightExercise } from '../../services/bodyweightAdaptation.service';
 import type { Exercise } from '../../types/workout.types';
 
 export function WorkoutLogger() {
@@ -328,6 +330,28 @@ export function WorkoutLogger() {
                           exercise={ex.exercise}
                           defaultRestSeconds={ex.sets[0]?.restSeconds || 90}
                         />
+                        
+                        {/* Bodyweight Exercise Progression */}
+                        {isBodyweightExercise(ex.exercise) && historyLoaded && (() => {
+                          const history = getHistory(ex.exerciseId || ex.exercise?.id);
+                          if (!history) return null;
+                          
+                          const adaptation = analyzeExerciseAdaptation(
+                            history,
+                            ex.sets.length,
+                            { min: 8, max: 12 }, // Default rep range, could be customized
+                            ex.exercise
+                          );
+                          
+                          return (
+                            <BodyweightProgressionDisplay
+                              exerciseId={ex.exerciseId || ex.exercise?.id}
+                              exerciseName={ex.exercise.name}
+                              adaptation={adaptation}
+                            />
+                          );
+                        })()}
+                        
                         <button
                           onClick={() => removeExercise(exIndex)}
                           className="text-xs text-red-400 hover:text-red-300"

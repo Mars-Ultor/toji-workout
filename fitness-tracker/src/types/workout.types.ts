@@ -11,6 +11,11 @@ export interface Exercise {
   secondaryMuscles?: string[];
   duration?: number; // Duration in seconds for stretches/warmups
   isTimed?: boolean; // True for exercises measured by time rather than reps (e.g., plank)
+  progressionPath?: {
+    easier?: string; // ID of easier variation
+    harder?: string; // ID of harder variation
+    alternatives?: string[]; // IDs of similar difficulty variations
+  };
 }
 
 export interface WorkoutSet {
