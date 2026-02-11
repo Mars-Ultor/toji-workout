@@ -20,6 +20,9 @@ export interface SavedProgramExercise {
   repsMax: number;
   restSeconds: number;
   duration?: number; // Duration in seconds for warmup/stretch exercises
+  isTimed?: boolean; // For timed exercises like planks
+  autoProgressionEnabled?: boolean; // Whether to apply automatic progression
+  progressionScheme?: 'linear' | 'double-progression' | 'wave'; // How to progress this exercise
 }
 
 export interface SavedProgramDay {

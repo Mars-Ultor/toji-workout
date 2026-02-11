@@ -21,7 +21,7 @@ interface WorkoutState {
   updateSet: (
     exerciseIndex: number,
     setIndex: number,
-    data: Partial<{ weight: number; reps: number; rir: number; rpe: number; completed: boolean }>
+    data: Partial<{ weight: number; reps: number; rir: number; rpe: number; completed: boolean; duration: number; restSeconds: number }>
   ) => void;
   addSet: (exerciseIndex: number) => void;
   removeSet: (exerciseIndex: number, setIndex: number) => void;
@@ -50,6 +50,11 @@ export const useWorkoutStore = create<WorkoutState>((set) => ({
   addExercise: (exercise) =>
     set((state) => {
       if (!state.activeWorkout) return {};
+      
+      // Determine default rest time based on exercise category
+      const defaultRest = exercise.category === 'compound' ? 120 : 
+                         exercise.category === 'isolation' ? 90 : 0;
+      
       return {
         activeWorkout: {
           ...state.activeWorkout,
@@ -59,7 +64,14 @@ export const useWorkoutStore = create<WorkoutState>((set) => ({
               exerciseId: exercise.id,
               exercise,
               sets: [
-                { setNumber: 1, weight: 0, reps: 0, completed: false },
+                { 
+                  setNumber: 1, 
+                  weight: 0, 
+                  reps: 0, 
+                  completed: false,
+                  restSeconds: defaultRest,
+                  duration: exercise.isTimed ? exercise.duration : undefined,
+                },
               ],
             },
           ],
@@ -94,6 +106,8 @@ export const useWorkoutStore = create<WorkoutState>((set) => ({
       const exercises = [...state.activeWorkout.exercises];
       const currentSets = exercises[exerciseIndex].sets;
       const lastSet = currentSets[currentSets.length - 1];
+      const exercise = exercises[exerciseIndex].exercise;
+      
       exercises[exerciseIndex] = {
         ...exercises[exerciseIndex],
         sets: [
@@ -103,6 +117,8 @@ export const useWorkoutStore = create<WorkoutState>((set) => ({
             weight: lastSet?.weight || 0,
             reps: lastSet?.reps || 0,
             completed: false,
+            restSeconds: lastSet?.restSeconds || (exercise.category === 'compound' ? 120 : 90),
+            duration: exercise.isTimed ? exercise.duration : undefined,
           },
         ],
       };

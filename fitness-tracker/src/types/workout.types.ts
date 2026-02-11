@@ -10,6 +10,7 @@ export interface Exercise {
   imageUrl?: string;
   secondaryMuscles?: string[];
   duration?: number; // Duration in seconds for stretches/warmups
+  isTimed?: boolean; // True for exercises measured by time rather than reps (e.g., plank)
 }
 
 export interface WorkoutSet {
@@ -20,6 +21,7 @@ export interface WorkoutSet {
   rpe?: number; // Rate of perceived exertion
   completed: boolean;
   restSeconds?: number;
+  duration?: number; // Duration in seconds for timed exercises (e.g., planks)
 }
 
 export interface WorkoutExercise {
@@ -62,4 +64,7 @@ export interface ProgramExercise {
   sets: number;
   reps: string; // e.g., "8-12"
   restSeconds: number;
+  duration?: number; // Duration in seconds for timed exercises
+  autoProgressionEnabled?: boolean; // Whether to apply automatic progression
+  progressionScheme?: 'linear' | 'double-progression' | 'wave'; // How to progress this exercise
 }

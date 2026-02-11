@@ -6,7 +6,8 @@ import { useAuthStore } from '../store/authStore';
 import { logOut, updateUserProfile } from '../services/auth.service';
 import { seedPublicFoods } from '../services/food.service';
 import { useToastStore } from '../store/toastStore';
-import { Moon, Sun, Bell, Scale, Palette, LogOut, Trash2, Database } from 'lucide-react';
+import { useProgramMigration } from '../hooks/useProgramMigration';
+import { Moon, Sun, Bell, Scale, Palette, LogOut, Trash2, Database, RefreshCw } from 'lucide-react';
 import { deleteUser } from 'firebase/auth';
 
 function getInitialSettings(profile: ReturnType<typeof useAuthStore.getState>['profile']) {
@@ -31,6 +32,7 @@ function getInitialSettings(profile: ReturnType<typeof useAuthStore.getState>['p
 export default function SettingsPage() {
   const { user, profile, setProfile } = useAuthStore();
   const { addToast } = useToastStore();
+  const { migratePrograms } = useProgramMigration();
 
   const [settings, setSettings] = useState(() => getInitialSettings(profile));
 
@@ -198,26 +200,44 @@ export default function SettingsPage() {
           <Database className="w-5 h-5" />
           Data Management
         </h3>
-        <SettingRow
-          icon={<Database className="w-4 h-4" />}
-          label="Seed Food Database"
-          description="Populate the public food database with 30 common foods"
-        >
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={async () => {
-              try {
-                await seedPublicFoods();
-                addToast({ type: 'success', message: 'Food database seeded with 30 foods' });
-              } catch {
-                addToast({ type: 'error', message: 'Failed to seed food database' });
-              }
-            }}
+        <div className="space-y-3">
+          <SettingRow
+            icon={<Database className="w-4 h-4" />}
+            label="Seed Food Database"
+            description="Populate the public food database with 30 common foods"
           >
-            Seed
-          </Button>
-        </SettingRow>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={async () => {
+                try {
+                  await seedPublicFoods();
+                  addToast({ type: 'success', message: 'Food database seeded with 30 foods' });
+                } catch {
+                  addToast({ type: 'error', message: 'Failed to seed food database' });
+                }
+              }}
+            >
+              Seed
+            </Button>
+          </SettingRow>
+          
+          <SettingRow
+            icon={<RefreshCw className="w-4 h-4" />}
+            label="Update Programs"
+            description="Add timer support and auto-progression to existing workout programs"
+          >
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={async () => {
+                await migratePrograms();
+              }}
+            >
+              Update
+            </Button>
+          </SettingRow>
+        </div>
       </Card>
 
       {/* Account Actions */}

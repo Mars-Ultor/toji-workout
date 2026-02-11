@@ -325,6 +325,8 @@ export function WorkoutLogger() {
                           suggestion={historyLoaded ? getSuggestionFor(ex.exerciseId || ex.exercise?.id) : null}
                           history={historyLoaded ? getHistory(ex.exerciseId || ex.exercise?.id) : null}
                           weightUnit={profile?.preferences.weightUnit || 'lbs'}
+                          exercise={ex.exercise}
+                          defaultRestSeconds={ex.sets[0]?.restSeconds || 90}
                         />
                         <button
                           onClick={() => removeExercise(exIndex)}

@@ -89,12 +89,15 @@ const FALLBACK_EXERCISE_DB: Exercise[] = [
   { id: 'skullcrusher', name: 'Skull Crushers', category: 'isolation', muscleGroup: ['Triceps'], equipment: ['Barbell'], difficulty: 'intermediate' },
   { id: 'close-grip-bench', name: 'Close-Grip Bench Press', category: 'compound', muscleGroup: ['Triceps', 'Chest'], equipment: ['Barbell'], difficulty: 'intermediate' },
   // Core
-  { id: 'plank', name: 'Plank', category: 'isolation', muscleGroup: ['Core'], equipment: ['Bodyweight'], difficulty: 'beginner' },
+  { id: 'plank', name: 'Plank', category: 'isolation', muscleGroup: ['Core'], equipment: ['Bodyweight'], difficulty: 'beginner', isTimed: true, duration: 30 },
+  { id: 'side-plank', name: 'Side Plank', category: 'isolation', muscleGroup: ['Core'], equipment: ['Bodyweight'], difficulty: 'intermediate', isTimed: true, duration: 30 },
   { id: 'crunches', name: 'Crunches', category: 'isolation', muscleGroup: ['Core'], equipment: ['Bodyweight'], difficulty: 'beginner' },
   { id: 'hanging-leg-raise', name: 'Hanging Leg Raise', category: 'isolation', muscleGroup: ['Core'], equipment: ['Bodyweight'], difficulty: 'intermediate' },
   { id: 'cable-woodchop', name: 'Cable Woodchop', category: 'isolation', muscleGroup: ['Core'], equipment: ['Cable'], difficulty: 'beginner' },
   { id: 'ab-wheel', name: 'Ab Wheel Rollout', category: 'isolation', muscleGroup: ['Core'], equipment: ['Bodyweight'], difficulty: 'intermediate' },
   { id: 'russian-twist', name: 'Russian Twist', category: 'isolation', muscleGroup: ['Core'], equipment: ['Bodyweight'], difficulty: 'beginner' },
+  { id: 'dead-bug', name: 'Dead Bug', category: 'isolation', muscleGroup: ['Core'], equipment: ['Bodyweight'], difficulty: 'beginner', isTimed: true, duration: 45 },
+  { id: 'hollow-hold', name: 'Hollow Hold', category: 'isolation', muscleGroup: ['Core'], equipment: ['Bodyweight'], difficulty: 'intermediate', isTimed: true, duration: 30 },
   // Warmup
   { id: 'jumping-jacks', name: 'Jumping Jacks', category: 'warmup', muscleGroup: ['Full Body'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 60 },
   { id: 'arm-circles', name: 'Arm Circles', category: 'warmup', muscleGroup: ['Shoulders'], equipment: ['Bodyweight'], difficulty: 'beginner', duration: 30 },

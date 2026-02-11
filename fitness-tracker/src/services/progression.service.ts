@@ -41,6 +41,26 @@ export interface DeloadRecommendation {
   suggestedVolumeMultiplier: number; // e.g. 0.6 = 60% of current volume
 }
 
+export interface AdaptationRecommendation {
+  exerciseId: string;
+  exerciseName: string;
+  adaptationType: 'increase-volume' | 'increase-intensity' | 'decrease-volume' | 'swap-exercise' | 'deload' | 'maintain';
+  reason: string;
+  suggestedSets?: number;
+  suggestedRepsRange?: string;
+  suggestedRestSeconds?: number;
+  alternativeExercises?: string[]; // IDs of similar exercises to swap to
+}
+
+export interface ProgressionScheme {
+  type: 'linear' | 'double-progression' | 'wave';
+  currentWeight: number;
+  currentReps: number;
+  nextWeight: number;
+  nextReps: number;
+  explanation: string;
+}
+
 // ── Fetch exercise history from workout logs ────────────────────────────────
 
 /**
@@ -388,4 +408,205 @@ export function generateProgramUpdates(
   }
 
   return updates;
+}
+// ── Exercise Adaptation ─────────────────────────────────────────────────────
+
+/**
+ * Analyzes exercise history to determine if adaptations are needed
+ * (volume changes, intensity changes, exercise swaps, etc.)
+ */
+export function analyzeExerciseAdaptation(
+  history: ExerciseHistory,
+  currentSets: number,
+  currentRepsRange: { min: number; max: number }
+): AdaptationRecommendation {
+  if (history.sessions.length < 3) {
+    return {
+      exerciseId: history.exerciseId,
+      exerciseName: history.exerciseName,
+      adaptationType: 'maintain',
+      reason: 'Not enough data to suggest adaptations yet',
+    };
+  }
+
+  const recentSessions = history.sessions.slice(0, 5);
+  const olderSessions = history.sessions.slice(5, 10);
+
+  // Calculate average volume per session
+  const recentAvgVolume = recentSessions.reduce((sum, s) => sum + s.totalVolume, 0) / recentSessions.length;
+  const olderAvgVolume = olderSessions.length > 0 
+    ? olderSessions.reduce((sum, s) => sum + s.totalVolume, 0) / olderSessions.length 
+    : recentAvgVolume;
+
+  // Check for plateau (volume not increasing over time)
+  const volumeStagnant = olderAvgVolume > 0 && Math.abs(recentAvgVolume - olderAvgVolume) / olderAvgVolume < 0.05;
+
+  // Check average RIR
+  const avgRir = recentSessions.reduce((sum, s) => {
+    const sessionAvgRir = s.sets.reduce((a, set) => a + (set.rir ?? 1), 0) / s.sets.length;
+    return sum + sessionAvgRir;
+  }, 0) / recentSessions.length;
+
+  // Check average reps
+  const avgReps = recentSessions.reduce((sum, s) => {
+    const sessionAvgReps = s.sets.reduce((a, set) => a + set.reps, 0) / s.sets.length;
+    return sum + sessionAvgReps;
+  }, 0) / recentSessions.length;
+
+  // Check for declining performance
+  const performanceDecline = olderAvgVolume > 0 && recentAvgVolume < olderAvgVolume * 0.85;
+
+  // Adaptation logic
+  if (performanceDecline) {
+    return {
+      exerciseId: history.exerciseId,
+      exerciseName: history.exerciseName,
+      adaptationType: 'deload',
+      reason: `Volume has declined by ${Math.round((1 - recentAvgVolume / olderAvgVolume) * 100)}%. Time to deload or reduce intensity.`,
+      suggestedSets: Math.max(1, currentSets - 1),
+      suggestedRepsRange: `${currentRepsRange.min}-${currentRepsRange.max}`,
+      suggestedRestSeconds: 120,
+    };
+  }
+
+  if (volumeStagnant && avgRir >= 3) {
+    // Hitting a plateau but still have RIR left - increase intensity
+    return {
+      exerciseId: history.exerciseId,
+      exerciseName: history.exerciseName,
+      adaptationType: 'increase-intensity',
+      reason: `Volume has plateaued at ${Math.round(recentAvgVolume)}${history.sessions[0].sets[0] ? ' kg' : ''}, but you have ${Math.round(avgRir)} RIR. Increase weight or decrease rest time.`,
+      suggestedRestSeconds: Math.max(30, (recentSessions[0].sets[0]?.restSeconds || 90) - 15),
+    };
+  }
+
+  if (volumeStagnant && avgRir < 1) {
+    // Plateau and no RIR left - might need volume increase or exercise swap
+    const sessionsCount = history.sessions.length;
+    if (sessionsCount >= 8) {
+      return {
+        exerciseId: history.exerciseId,
+        exerciseName: history.exerciseName,
+        adaptationType: 'swap-exercise',
+        reason: `You've plateaued on this exercise for ${sessionsCount} sessions with no RIR left. Consider swapping to a similar variation.`,
+      };
+    } else {
+      return {
+        exerciseId: history.exerciseId,
+        exerciseName: history.exerciseName,
+        adaptationType: 'increase-volume',
+        reason: `Plateaued with minimal RIR. Try adding a set or increasing rep range.`,
+        suggestedSets: currentSets + 1,
+        suggestedRepsRange: `${currentRepsRange.min + 2}-${currentRepsRange.max + 2}`,
+      };
+    }
+  }
+
+  if (avgReps >= currentRepsRange.max && avgRir >= 2) {
+    return {
+      exerciseId: history.exerciseId,
+      exerciseName: history.exerciseName,
+      adaptationType: 'increase-intensity',
+      reason: `Consistently hitting ${Math.round(avgReps)} reps with ${Math.round(avgRir)} RIR. Ready to increase weight.`,
+    };
+  }
+
+  return {
+    exerciseId: history.exerciseId,
+    exerciseName: history.exerciseName,
+    adaptationType: 'maintain',
+    reason: 'Progressing well. Keep current structure.',
+  };
+}
+
+/**
+ * Apply a specific progression scheme to calculate next session's targets
+ */
+export function applyProgressionScheme(
+  scheme: 'linear' | 'double-progression' | 'wave',
+  currentWeight: number,
+  currentReps: number,
+  targetRepsMin: number,
+  targetRepsMax: number,
+  avgRir: number
+): ProgressionScheme {
+  switch (scheme) {
+    case 'linear':
+      // Simple: if hit top of rep range with RIR >= 2, add weight
+      if (currentReps >= targetRepsMax && avgRir >= 2) {
+        const increment = currentWeight > 100 ? 5 : 2.5;
+        return {
+          type: 'linear',
+          currentWeight,
+          currentReps,
+          nextWeight: currentWeight + increment,
+          nextReps: targetRepsMin,
+          explanation: `Linear progression: Add ${increment} and drop back to ${targetRepsMin} reps`,
+        };
+      }
+      return {
+        type: 'linear',
+        currentWeight,
+        currentReps,
+        nextWeight: currentWeight,
+        nextReps: targetRepsMax,
+        explanation: 'Keep weight, aim for top of rep range',
+      };
+
+    case 'double-progression':
+      // Increase reps first, then weight
+      if (currentReps >= targetRepsMax && avgRir >= 2) {
+        const increment = currentWeight > 100 ? 5 : 2.5;
+        return {
+          type: 'double-progression',
+          currentWeight,
+          currentReps,
+          nextWeight: currentWeight + increment,
+          nextReps: targetRepsMin,
+          explanation: `Double progression: Hit ${targetRepsMax} reps, now add ${increment} and start at ${targetRepsMin} reps`,
+        };
+      }
+      return {
+        type: 'double-progression',
+        currentWeight,
+        currentReps,
+        nextWeight: currentWeight,
+        nextReps: Math.min(currentReps + 1, targetRepsMax),
+        explanation: `Double progression: Add 1 rep, work toward ${targetRepsMax}`,
+      };
+
+    case 'wave': {
+      // Periodized waves: alternate between heavy/low and light/high
+      const isHeavyWeek = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000)) % 2 === 0;
+      if (isHeavyWeek) {
+        return {
+          type: 'wave',
+          currentWeight,
+          currentReps,
+          nextWeight: currentWeight * 1.05,
+          nextReps: targetRepsMin,
+          explanation: `Wave progression: Heavy week - increase weight by 5%, lower reps to ${targetRepsMin}`,
+        };
+      } else {
+        return {
+          type: 'wave',
+          currentWeight,
+          currentReps,
+          nextWeight: currentWeight * 0.9,
+          nextReps: targetRepsMax + 2,
+          explanation: `Wave progression: Light week - reduce weight by 10%, increase reps to ${targetRepsMax + 2}`,
+        };
+      }
+    }
+
+    default:
+      return {
+        type: 'linear',
+        currentWeight,
+        currentReps,
+        nextWeight: currentWeight,
+        nextReps: currentReps,
+        explanation: 'Maintain current weight and reps',
+      };
+  }
 }

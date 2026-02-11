@@ -75,6 +75,9 @@ export function ProgramBuilder() {
           repsMax: ex.repsMax,
           restSeconds: ex.restSeconds,
           duration: ex.exercise.duration,
+          isTimed: ex.exercise.isTimed,
+          autoProgressionEnabled: ex.exercise.category === 'compound' || ex.exercise.category === 'isolation',
+          progressionScheme: ex.exercise.category === 'compound' ? 'linear' : 'double-progression',
         })),
       })),
       createdBy: user.uid,
@@ -125,10 +128,12 @@ export function ProgramBuilder() {
       const exercise: Exercise = {
         id: ex.exerciseId,
         name: ex.exerciseName,
-        category: 'compound',
+        category: ex.category || 'compound',
         muscleGroup: ex.muscleGroup,
         equipment: [],
         difficulty: 'intermediate',
+        duration: ex.duration,
+        isTimed: ex.isTimed,
       };
       addExercise(exercise);
       for (let s = 1; s < ex.sets; s++) {
