@@ -65,10 +65,13 @@ export function WorkoutLogger() {
 
   const handleFinish = async () => {
     if (!user || !activeWorkout) return;
-    const incompleteSets = activeWorkout.exercises.reduce(
-      (sum, ex) => sum + ex.sets.filter((s) => !s.completed).length,
-      0
-    );
+    // Only count incomplete sets from main exercises (exclude warmup and cooldown/stretch)
+    const incompleteSets = activeWorkout.exercises
+      .filter((ex) => !['warmup', 'stretch'].includes(ex.exercise.category))
+      .reduce(
+        (sum, ex) => sum + ex.sets.filter((s) => !s.completed).length,
+        0
+      );
     if (incompleteSets > 0) {
       if (!window.confirm(`You have ${incompleteSets} incomplete set(s). Finish anyway?`)) {
         return;
