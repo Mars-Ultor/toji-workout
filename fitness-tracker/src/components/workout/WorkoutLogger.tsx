@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
 import { Plus, Timer, ChevronDown, ChevronUp, ArrowUp, ArrowDown, AlertTriangle, TrendingUp } from 'lucide-react';
+import { format } from 'date-fns';
 import { Button } from '../shared/Button';
 import { Modal } from '../shared/Modal';
 import { Card } from '../shared/Card';
+import { DatePicker } from '../shared/DatePicker';
 import { ExerciseList } from './ExerciseList';
 import { SetTracker } from './SetTracker';
 import { RestTimer } from './RestTimer';
@@ -36,6 +38,7 @@ export function WorkoutLogger() {
   const [expandedExercise, setExpandedExercise] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [postWorkoutSummary, setPostWorkoutSummary] = useState<Map<string, { recommendation: string }> | null>(null);
+  const [workoutDate, setWorkoutDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const { addToast } = useToastStore();
 
   // Gather exercise IDs from active workout for history lookup
@@ -77,10 +80,14 @@ export function WorkoutLogger() {
         ? Math.round((Date.now() - activeWorkout.startTime.getTime()) / 1000)
         : 0;
 
+      // Convert selected date to ISO string at end of day in local timezone
+      const selectedDate = new Date(workoutDate + 'T00:00:00');
+      selectedDate.setHours(23, 59, 59, 999);
+      
       await logWorkout(user.uid, {
         name: activeWorkout.name,
         exercises: activeWorkout.exercises,
-        date: new Date().toISOString(),
+        date: selectedDate.toISOString(),
         duration,
       });
 
@@ -186,9 +193,12 @@ export function WorkoutLogger() {
     <div className="space-y-4">
       {/* Workout header */}
       <Card className="flex items-center justify-between">
-        <div>
-          <h2 className="font-bold text-gray-200">{activeWorkout.name}</h2>
-          <div className="flex gap-4 text-xs text-gray-500 mt-1">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <h2 className="font-bold text-gray-200">{activeWorkout.name}</h2>
+            <DatePicker value={workoutDate} onChange={setWorkoutDate} />
+          </div>
+          <div className="flex gap-4 text-xs text-gray-500">
             <span>{activeWorkout.exercises.length} exercises</span>
             <span>{totalSets} sets done</span>
             <span>{totalVolume.toLocaleString()} {profile?.preferences.weightUnit || 'lbs'} volume</span>
