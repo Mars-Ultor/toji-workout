@@ -24,7 +24,7 @@ function removeUndefined<T>(obj: T): T {
   }
   
   if (typeof obj === 'object') {
-    const cleaned: any = {};
+    const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       if (value !== undefined) {
         cleaned[key] = removeUndefined(value);
