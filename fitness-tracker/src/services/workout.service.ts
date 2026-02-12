@@ -13,14 +13,40 @@ import {
 import { db } from './firebase';
 import type { Workout, Exercise } from '../types/workout.types';
 
+// Helper function to remove undefined values from objects (Firestore doesn't accept undefined)
+function removeUndefined<T>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => removeUndefined(item)) as T;
+  }
+  
+  if (typeof obj === 'object') {
+    const cleaned: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        cleaned[key] = removeUndefined(value);
+      }
+    }
+    return cleaned as T;
+  }
+  
+  return obj;
+}
+
 export async function logWorkout(
   userId: string,
   workout: Omit<Workout, 'id' | 'userId'>
 ): Promise<string> {
-  const docRef = await addDoc(collection(db, `workoutLogs/${userId}/sessions`), {
+  // Remove undefined values before sending to Firestore
+  const cleanedWorkout = removeUndefined({
     ...workout,
     userId,
   });
+  
+  const docRef = await addDoc(collection(db, `workoutLogs/${userId}/sessions`), cleanedWorkout);
   return docRef.id;
 }
 
